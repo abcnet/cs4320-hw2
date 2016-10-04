@@ -18,7 +18,35 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 * @return value
 	 */
 	public T search(K key) {
-		return null;
+		// Return null if key or root is empty
+		if (key == null || root == null) {
+			return null;
+		}
+		
+		Node<K, T> curr = root;
+		while (curr instanceof IndexNode) {
+			if (curr.keys == null || curr.keys.size() == 0) {
+				return null;
+			}
+			int i = 0;
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+				i++;
+			}
+			curr = ((IndexNode<K, T>)curr).children.get(i);
+		}
+		if (curr instanceof LeafNode) {
+			if (curr.keys == null || curr.keys.size() == 0) {
+				return null;
+			}
+			int i = 0;
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+				i++;
+			}
+			return ((LeafNode<K, T>)curr).values.get(i);
+		} else {
+			return null;
+		}
+
 	}
 
 	/**
@@ -38,7 +66,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 * @param leaf, any other relevant data
 	 * @return the key/node pair as an Entry
 	 */
-	public Entry<K, Node<K,T>> splitLeafNode(LeafNode<K,T> leaf, ...) {
+	public Entry<K, Node<K,T>> splitLeafNode(LeafNode<K,T> leaf) {
 
 		return null;
 	}
@@ -50,7 +78,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 * @param index, any other relevant data
 	 * @return new key/node pair as an Entry
 	 */
-	public Entry<K, Node<K,T>> splitIndexNode(IndexNode<K,T> index, ...) {
+	public Entry<K, Node<K,T>> splitIndexNode(IndexNode<K,T> index) {
 
 		return null;
 	}
