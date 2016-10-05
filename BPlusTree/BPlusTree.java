@@ -32,7 +32,10 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
+			
 			curr = ((IndexNode<K, T>)curr).children.get(i);
+			
+			
 		}
 		if (curr instanceof LeafNode) {
 			if (curr.keys == null || curr.keys.size() == 0) {
@@ -42,7 +45,12 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
-			return ((LeafNode<K, T>)curr).values.get(i);
+			if (curr.keys.get(i).compareTo(key) == 0) {
+				return ((LeafNode<K, T>)curr).values.get(i);
+			} else {
+				return null;
+			}
+			
 		} else {
 			return null;
 		}
@@ -56,7 +64,26 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 * @param value
 	 */
 	public void insert(K key, T value) {
-
+		if (key == null) {
+			return;
+		}
+		if (root == null) {
+			root = new LeafNode<K, T>(key, value);
+			return;
+		}
+		Node<K, T> curr = root;
+		while (curr instanceof IndexNode) {
+			int i = 0;
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+				i++;
+			}
+			
+			curr = ((IndexNode<K, T>)curr).children.get(i);
+		}
+		
+		((LeafNode<K, T>)curr).insertSorted(key, value);
+		//TODO: Add detection for overflow
+		
 	}
 
 	/**
