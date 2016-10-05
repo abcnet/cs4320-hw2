@@ -25,7 +25,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 		
 		Node<K, T> curr = root;
 		while (curr instanceof IndexNode) {
-			if (curr.keys == null || curr.keys.size() == 0) {
+			if (curr.keys == null) {
 				return null;
 			}
 			int i = 0;
@@ -38,14 +38,14 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			
 		}
 		if (curr instanceof LeafNode) {
-			if (curr.keys == null || curr.keys.size() == 0) {
+			if (curr.keys == null) {
 				return null;
 			}
 			int i = 0;
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
-			if (curr.keys.get(i).compareTo(key) == 0) {
+			if (i < curr.keys.size() && curr.keys.get(i).compareTo(key) == 0) {
 				return ((LeafNode<K, T>)curr).values.get(i);
 			} else {
 				return null;
@@ -83,7 +83,9 @@ public class BPlusTree<K extends Comparable<K>, T> {
 		
 		((LeafNode<K, T>)curr).insertSorted(key, value);
 		//TODO: Add detection for overflow
-		
+		if (curr.isOverflowed()) {
+			
+		}
 	}
 
 	/**
@@ -116,7 +118,36 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 * @param key
 	 */
 	public void delete(K key) {
-
+		if (key == null || root == null) {
+			return;
+		}
+		Node<K, T> curr = root;
+		while (curr instanceof IndexNode) {
+			if (curr.keys == null) {
+				return;
+			}
+			int i = 0;
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+				i++;
+			}
+			
+			curr = ((IndexNode<K, T>)curr).children.get(i);
+		}
+		if (curr.keys == null) {
+			return;
+		}
+		int i = 0;
+		while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+			i++;
+		}
+		if (i < curr.keys.size() && curr.keys.get(i).compareTo(key) == 0) {
+			curr.keys.remove(i);
+			((LeafNode<K, T>)curr).values.remove(i);
+			
+			//TODO: Add handling for underflow
+		} else {
+			return;
+		}
 	}
 
 	/**
