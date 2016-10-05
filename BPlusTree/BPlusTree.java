@@ -71,19 +71,32 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			root = new LeafNode<K, T>(key, value);
 			return;
 		}
-		Node<K, T> curr = root;
+		Node<K, T> curr = root, parent = null;
+		int index = -1;
 		while (curr instanceof IndexNode) {
 			int i = 0;
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
 			
+			parent = curr;
 			curr = ((IndexNode<K, T>)curr).children.get(i);
+			index = i;
 		}
 		
 		((LeafNode<K, T>)curr).insertSorted(key, value);
 		//TODO: Add detection for overflow
 		if (curr.isOverflowed()) {
+			if (parent == null) {
+				Entry<K, Node<K,T>> entry = splitLeafNode((LeafNode<K, T>)curr);
+				root = new IndexNode<K, T>(entry.getKey(), curr, entry.getValue());
+			} else {
+				Entry<K, Node<K,T>> entry = splitLeafNode((LeafNode<K, T>)curr);
+				((IndexNode<K, T>)parent).insertSorted(entry, index);
+			}
+		}
+		//TODO: still need to detect IndexNode overflow
+		if (parent != null && parent.isOverflowed()) {
 			
 		}
 	}
@@ -96,8 +109,15 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 * @return the key/node pair as an Entry
 	 */
 	public Entry<K, Node<K,T>> splitLeafNode(LeafNode<K,T> leaf) {
-
-		return null;
+		LeafNode<K,T> newLeaf = new LeafNode<K,T>(leaf.keys.get(BPlusTree.D), leaf.values.get(BPlusTree.D));
+		for (int i = D + 1; i < leaf.keys.size(); i++) {
+			newLeaf.insertSorted(leaf.keys.get(i), leaf.values.get(i));
+		}
+		for (int i = leaf.keys.size() - 1; i >= BPlusTree.D; i--) {
+			leaf.keys.remove(i);
+			leaf.values.remove(i);
+		}
+		return new AbstractMap.SimpleEntry<K, Node<K,T>>(newLeaf.keys.get(0), newLeaf);
 	}
 
 	/**
