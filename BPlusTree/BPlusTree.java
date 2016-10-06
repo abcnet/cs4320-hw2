@@ -1,6 +1,7 @@
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Map.Entry;
+import java.util.Stack;
 
 /**
  * BPlusTree Class Assumptions: 1. No duplicate keys inserted 2. Order D:
@@ -73,13 +74,16 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			return;
 		}
 		Node<K, T> curr = root, parent = null;
+		Stack<IndexNode<K,T>> parents = new Stack<IndexNode<K,T>>();
+		Stack<Integer> indices = new Stack<Integer>();
 		int index = -1;
 		while (curr instanceof IndexNode) {
 			int i = 0;
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
-			
+			parents.add((IndexNode<K,T>)curr);
+			indices.add(i);
 			parent = curr;
 			curr = ((IndexNode<K, T>)curr).children.get(i);
 			index = i;
@@ -93,13 +97,30 @@ public class BPlusTree<K extends Comparable<K>, T> {
 				root = new IndexNode<K, T>(entry.getKey(), curr, entry.getValue());
 			} else {
 				Entry<K, Node<K,T>> entry = splitLeafNode((LeafNode<K, T>)curr);
+				
 				((IndexNode<K, T>)parent).insertSorted(entry, index);
 			}
 		}
-		//TODO: still need to detect IndexNode overflow
-		if (parent != null && parent.isOverflowed()) {
-			//Entry<K, Node<K,T>> entry = splitIndexNode((IndexNode<K,T>)parent);
-			// TODO: iteratively check parent's parent
+//		//TODO: still need to detect IndexNode overflow
+//		if (parent != null && parent.isOverflowed()) {
+//			//Entry<K, Node<K,T>> entry = splitIndexNode((IndexNode<K,T>)parent);
+//			// TODO: iteratively check parent's parent
+//		}
+		if (!indices.isEmpty()) {
+			indices.pop();
+		}
+		while (!parents.isEmpty()) {
+			IndexNode<K,T> last = parents.pop();
+			 
+			if (last.isOverflowed()) {
+				Entry<K, Node<K,T>> entry = splitIndexNode(last);
+				if (last == root) {
+					root = new IndexNode<K,T>(entry.getKey(), last, entry.getValue());
+				} else {
+					int i = indices.pop();
+					parents.peek().insertSorted(entry, i);
+				}
+			}
 		}
 	}
 
