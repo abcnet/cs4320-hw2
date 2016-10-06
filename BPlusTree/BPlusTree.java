@@ -31,7 +31,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 				return null;
 			}
 			int i = 0;
-			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) <= 0) {
 				i++;
 			}
 			
@@ -79,7 +79,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 		int index = -1;
 		while (curr instanceof IndexNode) {
 			int i = 0;
-			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) <= 0) {
 				i++;
 			}
 			parents.push((IndexNode<K,T>)curr);
@@ -191,7 +191,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 				return;
 			}
 			int i = 0;
-			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
+			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) <= 0) {
 				i++;
 			}
 			parents.push((IndexNode<K,T>)curr);
