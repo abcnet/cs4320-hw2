@@ -258,6 +258,8 @@ public class BPlusTree<K extends Comparable<K>, T> {
 								parent.children.remove(index2 + 1);
 							}
 						}
+					} else if (last == root && last.keys.size() == 0) {
+						root = last.children.get(0);
 					} else {
 						break;
 					}
