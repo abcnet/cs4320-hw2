@@ -216,17 +216,17 @@ public class BPlusTree<K extends Comparable<K>, T> {
 					// has left sibling
 					IndexNode<K,T> parent = parents.peek();
 					LeafNode<K,T> leftSibling = (LeafNode<K, T>) parent.children.get(index - 1);
-					int position = handleLeafNodeUnderflow(leftSibling, (LeafNode<K, T>)curr, parent);
-					if (position != -1) {
-						parent.keys.remove(position);
+					boolean merged = handleLeafNodeUnderflow(leftSibling, (LeafNode<K, T>)curr, parent, index);
+					if (merged) {
+						parent.keys.remove(index);
 					}
 				} else {
 					// has right sibling
 					IndexNode<K,T> parent = parents.peek();
 					LeafNode<K,T> rightSibling = (LeafNode<K,T>) parent.children.get(index + 1);
-					int position = handleLeafNodeUnderflow((LeafNode<K, T>)curr, rightSibling, parent);
-					if (position != -1) {
-						parent.keys.remove(position);
+					boolean merged = handleLeafNodeUnderflow((LeafNode<K, T>)curr, rightSibling, parent, index + 1);
+					if (merged) {
+						parent.keys.remove(index + 1);
 					}
 				}
 			}
@@ -238,17 +238,17 @@ public class BPlusTree<K extends Comparable<K>, T> {
 						// has left sibling
 						IndexNode<K,T> parent = parents.peek();
 						IndexNode<K,T> leftSibling = (IndexNode<K,T>) parent.children.get(index - 1);
-						int position = handleIndexNodeUnderflow(leftSibling, last, parent);
-						if (position != -1) {
-							parent.keys.remove(position);
+						boolean merged = handleIndexNodeUnderflow(leftSibling, last, parent, index);
+						if (merged) {
+							parent.keys.remove(index);
 						}
 					} else {
 						// has right sibling
 						IndexNode<K,T> parent = parents.peek();
 						IndexNode<K,T> rightSibling = (IndexNode<K,T>) parent.children.get(index + 1);
-						int position = handleIndexNodeUnderflow(last, rightSibling, parent);
-						if (position != -1) {
-							parent.keys.remove(position);
+						boolean merged = handleIndexNodeUnderflow(last, rightSibling, parent, index + 1);
+						if (merged) {
+							parent.keys.remove(index + 1);
 						}
 					}
 				}
@@ -267,13 +267,46 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 *            : the bigger node
 	 * @param parent
 	 *            : their parent index node
-	 * @return the splitkey position in parent if merged so that parent can
-	 *         delete the splitkey later on. -1 otherwise
+	 * @return true of merged, false if redistributed
+//	 * the splitkey position in parent if merged so that parent can
+//	 *         delete the splitkey later on. -1 otherwise
 	 */
-	public int handleLeafNodeUnderflow(LeafNode<K,T> left, LeafNode<K,T> right,
-			IndexNode<K,T> parent) {
-		//TODO: need to change key when redistribution
-		return -1;
+	public boolean handleLeafNodeUnderflow(LeafNode<K,T> left, LeafNode<K,T> right,
+			IndexNode<K,T> parent, int rightI) {
+		
+		if ((left.keys.size() + right.keys.size()) / 2 < BPlusTree.D) {
+			// merge
+			for (K key: right.keys) {
+				left.keys.add(key);
+			}
+			for (T value: right.values) {
+				left.values.add(value);
+			}
+			right.nextLeaf.previousLeaf = left;
+			left.nextLeaf = right.nextLeaf;
+			return true;
+		} else {
+			// redistribute
+			int m = left.keys.size(), n = right.keys.size();
+			int m2 = (m + n) / 2;
+			if (m < m2) {
+				for (int i = m + 1; i <= m2; i++) {
+					left.keys.add(right.keys.get(0));
+					left.values.add(right.values.get(0));
+					right.keys.remove(0);
+					right.values.remove(0);
+				}
+			} else if (m > m2) {
+				for (int i = m2 + 1; i <= m; i++) {
+					right.keys.add(0, left.keys.get(left.keys.size() - 1));
+					right.values.add(0, left.values.get(left.values.size() - 1));
+					left.keys.remove(left.keys.size() - 1);
+					left.values.remove(left.values.size() - 1);
+				}
+			}
+			parent.keys.set(rightI, right.keys.get(0));
+			return false;
+		}
 
 	}
 
@@ -286,12 +319,70 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 *            : the bigger node
 	 * @param parent
 	 *            : their parent index node
-	 * @return the splitkey position in parent if merged so that parent can
-	 *         delete the splitkey later on. -1 otherwise
+	 * @return true of merged, false if redistributed
+//	 * the splitkey position in parent if merged so that parent can
+//	 *         delete the splitkey later on. -1 otherwise
 	 */
-	public int handleIndexNodeUnderflow(IndexNode<K,T> leftIndex,
-			IndexNode<K,T> rightIndex, IndexNode<K,T> parent) {
-		return -1;
+	public boolean handleIndexNodeUnderflow(IndexNode<K,T> leftIndex,
+			IndexNode<K,T> rightIndex, IndexNode<K,T> parent, int rightI) {
+		if ((leftIndex.keys.size() + rightIndex.keys.size()) / 2 < BPlusTree.D) {
+			// merge
+			if ((leftIndex.keys.size() + rightIndex.keys.size()) / 2 < BPlusTree.D) {
+				Node<K,T> curr = rightIndex;
+				while (!curr.isLeafNode) {
+					curr = ((IndexNode<K,T>)curr).children.get(0);
+				}
+				leftIndex.keys.add(((LeafNode<K,T>)curr).keys.get(0));
+				for (K key: rightIndex.keys) {
+					leftIndex.keys.add(key);
+				}
+				for (Node<K,T> n: rightIndex.children) {
+					leftIndex.children.add(n);
+				}
+			}
+			return true;
+		} else {
+			// redistribute
+			int m = leftIndex.keys.size(), n = rightIndex.keys.size();
+			int m2 = (m + n) / 2;
+			if (m < m2) {
+				Node<K,T> curr = rightIndex;
+				while (!curr.isLeafNode) {
+					curr = ((IndexNode<K,T>)curr).children.get(0);
+				}
+				leftIndex.keys.add(((LeafNode<K,T>)curr).keys.get(0));
+				for (int i = m + 1; i <= m2; i++) {
+					if (i != m + 1) {
+						leftIndex.keys.add(rightIndex.keys.get(0));
+						rightIndex.keys.remove(0);
+					}
+					leftIndex.children.add(rightIndex.children.get(0));
+					rightIndex.children.remove(0);
+				}
+				rightIndex.keys.remove(0);
+			} else if (m > m2) {
+				Node<K,T> curr = rightIndex;
+				while (!curr.isLeafNode) {
+					curr = ((IndexNode<K,T>)curr).children.get(0);
+				}
+				rightIndex.keys.add(0, ((LeafNode<K,T>)curr).keys.get(0));
+				for (int i = m2 + 1; i <= m; i++) {
+					if (i == m2 + 1) {
+						rightIndex.keys.add(0, leftIndex.keys.get(leftIndex.keys.size() - 1));
+						leftIndex.keys.remove(leftIndex.keys.size() - 1);
+					}
+					rightIndex.children.add(0, leftIndex.children.get(leftIndex.children.size() - 1));
+					leftIndex.children.remove(leftIndex.children.size() - 1);
+				}
+				leftIndex.keys.remove(leftIndex.keys.size() - 1);
+			}
+			Node<K,T> curr = rightIndex;
+			while (!curr.isLeafNode) {
+				curr = ((IndexNode<K,T>)curr).children.get(0);
+			}
+			parent.keys.set(rightI, ((LeafNode<K,T>)curr).keys.get(0));
+			return false;
+		}
 	}
 
 }
