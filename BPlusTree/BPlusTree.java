@@ -209,7 +209,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			curr.keys.remove(i);
 			((LeafNode<K, T>)curr).values.remove(i);
 			
-			//TODO: Add handling for underflow
+			// Handle LeafNode underflow
 			if (curr != root && curr.isUnderflowed()) {
 				int index = indices.pop();
 				if (index > 0) {
@@ -218,7 +218,8 @@ public class BPlusTree<K extends Comparable<K>, T> {
 					LeafNode<K,T> leftSibling = (LeafNode<K, T>) parent.children.get(index - 1);
 					boolean merged = handleLeafNodeUnderflow(leftSibling, (LeafNode<K, T>)curr, parent, index);
 					if (merged) {
-						parent.keys.remove(index);
+						parent.keys.remove(index - 1);
+						parent.children.remove(index);
 					}
 				} else {
 					// has right sibling
@@ -226,33 +227,41 @@ public class BPlusTree<K extends Comparable<K>, T> {
 					LeafNode<K,T> rightSibling = (LeafNode<K,T>) parent.children.get(index + 1);
 					boolean merged = handleLeafNodeUnderflow((LeafNode<K, T>)curr, rightSibling, parent, index + 1);
 					if (merged) {
-						parent.keys.remove(index + 1);
+						parent.keys.remove(index);
+						parent.children.remove(index + 1);
 					}
 				}
-			}
-			while (!parents.isEmpty()) {
-				IndexNode<K,T> last = parents.pop();
-				if (last != root && last.isUnderflowed()) {
-					int index = indices.pop();
-					if (index > 0) {
-						// has left sibling
-						IndexNode<K,T> parent = parents.peek();
-						IndexNode<K,T> leftSibling = (IndexNode<K,T>) parent.children.get(index - 1);
-						boolean merged = handleIndexNodeUnderflow(leftSibling, last, parent, index);
-						if (merged) {
-							parent.keys.remove(index);
+				
+				// IndexNode underflow
+				while (!parents.isEmpty()) {
+					IndexNode<K,T> last = parents.pop();
+					if (last != root && last.isUnderflowed()) {
+						int index2 = indices.pop();
+						if (index2 > 0) {
+							// has left sibling
+							IndexNode<K,T> parent = parents.peek();
+							IndexNode<K,T> leftSibling = (IndexNode<K,T>) parent.children.get(index2 - 1);
+							boolean merged = handleIndexNodeUnderflow(leftSibling, last, parent, index2);
+							if (merged) {
+								parent.keys.remove(index2 - 1);
+								parent.children.remove(index2);
+							}
+						} else {
+							// has right sibling
+							IndexNode<K,T> parent = parents.peek();
+							IndexNode<K,T> rightSibling = (IndexNode<K,T>) parent.children.get(index2 + 1);
+							boolean merged = handleIndexNodeUnderflow(last, rightSibling, parent, index2 + 1);
+							if (merged) {
+								parent.keys.remove(index2);
+								parent.children.remove(index2 + 1);
+							}
 						}
 					} else {
-						// has right sibling
-						IndexNode<K,T> parent = parents.peek();
-						IndexNode<K,T> rightSibling = (IndexNode<K,T>) parent.children.get(index + 1);
-						boolean merged = handleIndexNodeUnderflow(last, rightSibling, parent, index + 1);
-						if (merged) {
-							parent.keys.remove(index + 1);
-						}
+						break;
 					}
 				}
 			}
+			
 		} else {
 			return;
 		}
