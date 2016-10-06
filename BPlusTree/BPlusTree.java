@@ -82,8 +82,8 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
-			parents.add((IndexNode<K,T>)curr);
-			indices.add(i);
+			parents.push((IndexNode<K,T>)curr);
+			indices.push(i);
 			parent = curr;
 			curr = ((IndexNode<K, T>)curr).children.get(i);
 			index = i;
@@ -120,6 +120,8 @@ public class BPlusTree<K extends Comparable<K>, T> {
 					int i = indices.pop();
 					parents.peek().insertSorted(entry, i);
 				}
+			} else {
+				break;
 			}
 		}
 	}
@@ -182,6 +184,8 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			return;
 		}
 		Node<K, T> curr = root;
+		Stack<IndexNode<K,T>> parents = new Stack<IndexNode<K,T>>();
+		Stack<Integer> indices = new Stack<Integer>();
 		while (curr instanceof IndexNode) {
 			if (curr.keys == null) {
 				return;
@@ -190,7 +194,8 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			while(i < curr.keys.size() && curr.keys.get(i).compareTo(key) < 0) {
 				i++;
 			}
-			
+			parents.push((IndexNode<K,T>)curr);
+			indices.push(i);
 			curr = ((IndexNode<K, T>)curr).children.get(i);
 		}
 		if (curr.keys == null) {
@@ -205,6 +210,49 @@ public class BPlusTree<K extends Comparable<K>, T> {
 			((LeafNode<K, T>)curr).values.remove(i);
 			
 			//TODO: Add handling for underflow
+			if (curr != root && curr.isUnderflowed()) {
+				int index = indices.pop();
+				if (index > 0) {
+					// has left sibling
+					IndexNode<K,T> parent = parents.peek();
+					LeafNode<K,T> leftSibling = (LeafNode<K, T>) parent.children.get(index - 1);
+					int position = handleLeafNodeUnderflow(leftSibling, (LeafNode<K, T>)curr, parent);
+					if (position != -1) {
+						parent.keys.remove(position);
+					}
+				} else {
+					// has right sibling
+					IndexNode<K,T> parent = parents.peek();
+					LeafNode<K,T> rightSibling = (LeafNode<K,T>) parent.children.get(index + 1);
+					int position = handleLeafNodeUnderflow((LeafNode<K, T>)curr, rightSibling, parent);
+					if (position != -1) {
+						parent.keys.remove(position);
+					}
+				}
+			}
+			while (!parents.isEmpty()) {
+				IndexNode<K,T> last = parents.pop();
+				if (last != root && last.isUnderflowed()) {
+					int index = indices.pop();
+					if (index > 0) {
+						// has left sibling
+						IndexNode<K,T> parent = parents.peek();
+						IndexNode<K,T> leftSibling = (IndexNode<K,T>) parent.children.get(index - 1);
+						int position = handleIndexNodeUnderflow(leftSibling, last, parent);
+						if (position != -1) {
+							parent.keys.remove(position);
+						}
+					} else {
+						// has right sibling
+						IndexNode<K,T> parent = parents.peek();
+						IndexNode<K,T> rightSibling = (IndexNode<K,T>) parent.children.get(index + 1);
+						int position = handleIndexNodeUnderflow(last, rightSibling, parent);
+						if (position != -1) {
+							parent.keys.remove(position);
+						}
+					}
+				}
+			}
 		} else {
 			return;
 		}
@@ -224,6 +272,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	 */
 	public int handleLeafNodeUnderflow(LeafNode<K,T> left, LeafNode<K,T> right,
 			IndexNode<K,T> parent) {
+		//TODO: need to change key when redistribution
 		return -1;
 
 	}
