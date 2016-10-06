@@ -158,20 +158,22 @@ public class BPlusTree<K extends Comparable<K>, T> {
 	public Entry<K, Node<K,T>> splitIndexNode(IndexNode<K,T> index) {
 		ArrayList<K> keys = new ArrayList<K>(index.keys.size() - BPlusTree.D);
 		ArrayList<Node<K,T>> nodes = new ArrayList<Node<K,T>>(index.children.size() - BPlusTree.D);
-		for (int i = D; i < index.keys.size(); i++) {
+		for (int i = D + 1; i < index.keys.size(); i++) {
 			keys.add(index.keys.get(i));
 		}
-		for (int i = D; i < index.children.size(); i++) {
+		for (int i = D + 1; i < index.children.size(); i++) {
 			nodes.add(index.children.get(i));
 		}
 		IndexNode<K,T> newIndex = new IndexNode<K,T>(keys, nodes);
-		for (int i = index.keys.size() - 1; i >= BPlusTree.D - 1; i--) {
+		for (int i = index.keys.size() - 1; i >= BPlusTree.D + 1; i--) {
 			index.keys.remove(i);
 		}
-		for (int i = index.children.size() - 1; i >= BPlusTree.D; i--) {
+		K key = index.keys.get(BPlusTree.D);
+		index.keys.remove(BPlusTree.D);
+		for (int i = index.children.size() - 1; i >= BPlusTree.D + 1; i--) {
 			index.children.remove(i);
 		}
-		return new AbstractMap.SimpleEntry<K, Node<K,T>>(newIndex.keys.get(0), newIndex);
+		return new AbstractMap.SimpleEntry<K, Node<K,T>>(key, newIndex);
 	}
 
 	/**
