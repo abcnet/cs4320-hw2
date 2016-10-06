@@ -304,7 +304,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 					left.values.remove(left.values.size() - 1);
 				}
 			}
-			parent.keys.set(rightI, right.keys.get(0));
+			parent.keys.set(rightI - 1, right.keys.get(0));
 			return false;
 		}
 
