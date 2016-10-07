@@ -90,7 +90,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 		}
 		
 		((LeafNode<K, T>)curr).insertSorted(key, value);
-		//TODO: Add detection for overflow
+		// Leaf overflow
 		if (curr.isOverflowed()) {
 			if (parent == null) {
 				Entry<K, Node<K,T>> entry = splitLeafNode((LeafNode<K, T>)curr);
@@ -101,11 +101,7 @@ public class BPlusTree<K extends Comparable<K>, T> {
 				((IndexNode<K, T>)parent).insertSorted(entry, index);
 			}
 		}
-//		//TODO: still need to detect IndexNode overflow
-//		if (parent != null && parent.isOverflowed()) {
-//			//Entry<K, Node<K,T>> entry = splitIndexNode((IndexNode<K,T>)parent);
-//			// TODO: iteratively check parent's parent
-//		}
+		// IndexNode overflow
 		if (!indices.isEmpty()) {
 			indices.pop();
 		}
